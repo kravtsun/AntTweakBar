@@ -75,15 +75,20 @@ add_library(${target} STATIC ${headers} ${sources})
 target_include_directories(${target}
 	PUBLIC
 		$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-		$<INSTALL_INTERFACE:include>
 	PRIVATE
 		compile
 		${CMAKE_CURRENT_BINARY_DIR}
 )
 
 if (NOT WIN32)
-	find_package(OpenGL REQUIRED)
-	target_link_libraries(${target} ${OPENGL_LIBRARIES})
+
+	if (NOT APPLE)
+		find_package(OpenGL REQUIRED)
+	else()
+		set(OPENGL_LIBRARIES "-framework Foundation" "-framework OpenGL")
+	endif()
+
+	target_link_libraries(${target} PRIVATE ${OPENGL_LIBRARIES})
 endif()
 
 set(defs "")
@@ -125,4 +130,12 @@ if (ATB_GUIRENDERER_USE_D3D11)
 
 else()
 	ignore_hlsl(${d3d11HlslFile})
+endif()
+
+###############################################################################
+# Installation (required for static builds of the lib)
+
+if (NOT BUILD_SHARED_LIBS)
+	install(TARGETS ${target} EXPORT AntTweakBarTargets
+			ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
 endif()

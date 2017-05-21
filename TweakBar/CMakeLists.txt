@@ -99,13 +99,25 @@ target_include_directories(AntTweakBar
 		compile
 		${CMAKE_CURRENT_BINARY_DIR})
 
-set(defs TW_EXPORTS)
+set(defs PRIVATE TW_EXPORTS)
+
+if (WIN32)
+	# Don't bake library names into client code (no need for that using CMake)
+	set(defs INTERFACE TW_NO_LIB_PRAGMA ${defs})
+endif()
 
 if (NOT BUILD_SHARED_LIBS)
-	list(APPEND TW_STATIC)
+
+	list(APPEND defs TW_STATIC)
+
 elseif (WIN32 AND CMAKE_SIZEOF_VOID_P EQUAL 8)
+
 	set_target_properties(${PROJECT_NAME}
 		PROPERTIES OUTPUT_NAME "${PROJECT_NAME}64")
+endif()
+
+if (APPLE)
+	target_link_libraries(AntTweakBar PRIVATE "-framework AppKit")
 endif()
 
 if ((UNIX AND NOT APPLE) OR ATB_EVENT_HANDLER_X11)
@@ -123,14 +135,10 @@ append_unless(defs	TW_NO_SDL13_EVENTS				ATB_EVENT_HANDLER_SDL13)
 append_unless(defs	TW_NO_SDL20_EVENTS				ATB_EVENT_HANDLER_SDL20)
 append_unless(defs	TW_NO_SFML_EVENTS				ATB_EVENT_HANDLER_SFML)
 
-target_compile_definitions(AntTweakBar PRIVATE ${defs})
-
-if (NOT CMAKE_INSTALL_LIBDIR)
-	set(CMAKE_INSTALL_LIBDIR "lib")
-endif()
+target_compile_definitions(AntTweakBar ${defs})
 
 install(TARGETS AntTweakBar EXPORT AntTweakBarTargets
-		RUNTIME DESTINATION bin
+		RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 		ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
 		LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
